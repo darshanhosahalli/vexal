@@ -98,11 +98,22 @@
                 } catch(error) {
                     console.log('error while mocking response:- ', error);
                 }
+                let parsedBody = {};
+                if (body) {
+                    // Attempt to parse the body as JSON; if parsing fails, log the raw body
+                    try {
+                        parsedBody = JSON.parse(body);
+                    } catch (error) {
+                        console.log('Request Body (raw):', body);
+                    }
+                } else {
+                    console.log('No request body.');
+                }
                 sendMessageToContentScript({
                     type: 'payload',
                     url: this._url,
                     method: this._method,
-                    parsedBody: body? JSON.parse(body) : {}
+                    parsedBody: parsedBody
                 });
                 super.send(body);
                 const eventCallback = this.onreadystatechange;
