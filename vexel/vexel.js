@@ -32,6 +32,7 @@ responseTab.addEventListener('click', () => toggleSelected(responseTab, response
 let networkLog = [];
 let networkLogObjectMap = {};
 let activeType = "";
+let networkMap = {};
 
 // clear network log
 clearNetworkLogs.addEventListener('click', function() {
@@ -137,6 +138,8 @@ chrome.webRequest.onBeforeRequest.addListener(
                     if(networkLog.length == 1) {
                         hideEmptyState();
                     }
+                    networkMap[details.method] = {};
+                    networkMap[details.method][details.url] = details.requestId;
                     networkLogObjectMap[details.requestId] = { slNumber: networkLog.length, method: details.method, url: details.url, type: details.type };
                     networkLogObjectMap[details.requestId]['row'] = addNewNetworkLog(networkLogObjectMap[details.requestId]);
                 }
@@ -229,6 +232,7 @@ chrome.webRequest.onErrorOccurred.addListener(
             try {
                 if (tabs && tabs.length > 0 && details.tabId === tabs[0].id) {
                     networkLogObjectMap[details.requestId]['error'] = details.error;
+                    updatedStatusCodeInNetworkLog(networkLogObjectMap[details.requestId]['row'], details.error);
                 }
             } catch(error) {
                 console.log('error occurred in onErrorOccurred:- ', error);
@@ -455,13 +459,13 @@ function appendNetworkDetails(networkLog) {
         // append response headers
         appendHeader(networkLog["responseHeaders"], responseHeaders);
 
-        /*if(networkLog["body"]) {
+        if(networkLog["body"]) {
             appendPayload(networkLog["body"]);
-        }*/
+        }
 
-        /*if(responseByUrl[networkLog['url']]) {
-            appendResponse(responseByUrl[networkLog['url']].response_body, networkLog['url']);
-        }*/
+        if(networkLog["response_body"]) {
+            appendResponse(networkLog["response_body"], networkLog["url"]);
+        }
     } catch(error) {
         console.log('error occurred in appendNetworkDetails:- ', error);
     }
@@ -515,4 +519,97 @@ function toggleSelected(selectedTab, tabDetails) {
     } catch(error) {
         console.log('error occurred in toggleSelected:- ', error);
     }
+}
+
+// appendPayload
+function appendPayload(payload) {
+    try {
+        payloadDetailsTab.textContent = JSON.stringify(payload);
+    } catch(error) {
+        console.log('error occurred while appendPayload:-', error);
+    }
+}
+
+try {
+    // devtools.js
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        console.log('message:- ', message);
+        if (message.action === "fetch-inject") {
+            if(message.data) {
+                if(message.data && message.data.type) {
+                    if(message.data.type === "payload") {
+                        if(networkMap.hasOwnProperty(message.data.method)) {
+                            if(networkMap[message.data.method].hasOwnProperty(message.data.url)) {
+                                networkLogObjectMap[networkMap[message.data.method][message.data.url]]["body"] = message.data.parsedBody;
+                            }
+                        }
+                    } else if(message.data.type === "response") {
+                        if(networkMap.hasOwnProperty(message.data.method)) {
+                            if(networkMap[message.data.method].hasOwnProperty(message.data.url)) {
+                                networkLogObjectMap[networkMap[message.data.method][message.data.url]]["response_body"] = message.data.response;
+                                console.log('networkLogObjectMap:- ', networkLogObjectMap);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+} catch(error) {
+    console.log('error occurred while listening to on message:- ', error);
+}
+
+// append response
+function appendResponse(payload, url) {
+    while (responseDetailsTab && responseDetailsTab.firstChild) {
+        responseDetailsTab.removeChild(responseDetailsTab.firstChild);
+    }
+
+    let response = document.createElement("textarea");
+    response.classList.add("response");
+    response.value = payload
+
+    let mockButtonDiv = document.createElement("div");
+    mockButtonDiv.classList.add('mock-div');
+
+    let button = document.createElement("button");
+    button.classList.add("button");
+
+    let icon = document.createElement("div");
+    icon.classList.add("icon", "margin");
+    icon.appendChild(getMockSvg());
+
+    let text = document.createElement("div");
+    text.textContent = "Mock";
+
+    button.appendChild(icon);
+    button.appendChild(text);
+    button.addEventListener("click", (event) => mockResponse(response, url));
+
+    mockButtonDiv.appendChild(button);
+    responseDetailsTab.appendChild(mockButtonDiv);
+    responseDetailsTab.appendChild(response);
+}
+
+// mock response
+function mockResponse(textarea, url) {
+    /*const mock = {
+        url,
+        response: textarea.value
+    }
+    chrome.runtime.sendMessage({ action: "message-to-inject", data: mock });*/
+    console.log('mock Response called');
+}
+
+// mock svg
+function getMockSvg() {
+    const svgString = `
+        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9.74872 2.49415L18.1594 7.31987M9.74872 2.49415L8.91283 2M9.74872 2.49415L6.19982 8.61981M18.1594 7.31987L15.902 11.2163M18.1594 7.31987L19 7.80374M15.902 11.2163L14.1886 14.1738M15.902 11.2163L13.344 9.74451M14.1886 14.1738L12.5511 17.0003M14.1886 14.1738L9.98568 11.7556M12.5511 17.0003L11.0558 19.5813C9.7158 21.8942 6.74803 22.6867 4.42709 21.3513C2.10615 20.0159 1.31093 17.0584 2.65093 14.7455L3.95184 12.5M12.5511 17.0003L9.93838 15.4971" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M22 14.9166C22 16.0672 21.1046 16.9999 20 16.9999C18.8954 16.9999 18 16.0672 18 14.9166C18 14.1967 18.783 13.2358 19.3691 12.6174C19.7161 12.2512 20.2839 12.2512 20.6309 12.6174C21.217 13.2358 22 14.1967 22 14.9166Z" stroke="#1C274C" stroke-width="1.5"/>
+        </svg>
+    `;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, 'image/svg+xml');
+    return doc.documentElement;
 }

@@ -10,6 +10,22 @@
       "48": "images/icon-48.png",
       "128": "images/icon-128.png"
     },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["vexel/content-script.js"],
+        "run_at": "document_end"
+      }
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["vexel/fetch-inject.js"],
+        "matches": ["<all_urls>"]
+      }
+    ],
+    "background": {
+      "service_worker": "vexel/background.js"
+    },
     "devtools_page": "devtools.html",
     "host_permissions": ["<all_urls>"],
     "permissions": ["tabs", "webRequest", "activeTab", "storage"]
