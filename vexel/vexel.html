@@ -67,10 +67,56 @@
                          Awaiting Network Logs...
                     </div>
                 </div>
+                <div id="network-logs">
+                </div>
             </div>
         </div>
-        <div id="temp" class="temp">
-
+        <div id="attributes" class="request-details  hide">
+            <div class="header-details-tabs">
+              <div id="close-request-details" class="close">X</div>
+              <div id="tab-headers" class="tab-heading selected">Headers</div>
+              <div id="tab-payload" class="tab-heading">Payload</div>
+              <div id="tab-response" class="tab-heading">Response</div>
+              <!--<div class="tab-heading">Cookies</div>-->
+            </div>
+            <div id="Headers">
+              <div>
+                <div class="sub-header">General</div>
+                <div id="general">
+                  <div class="display-headers">
+                    <div class="left-header">Request URL:</div>
+                    <div class="left-header" id="request-url"></div>
+                  </div>
+                  <div class="display-headers">
+                    <div class="left-header">Request Method:</div>
+                    <div class="left-header" id="request-method"></div>
+                  </div>
+                  <div class="display-headers">
+                    <div class="left-header">Status Code:</div>
+                    <div class="left-header" id="request-status-code"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="sub-header">Request</div>
+                <div id="request-headers">
+                </div>
+              </div>
+              <div>
+                <div class="sub-header">Response</div>
+                <div id="response-headers">
+                </div>
+              </div>
+            </div>
+            <div id="Payload" class="hide">
+              
+            </div>
+            <div id="Response" class="hide">
+              
+            </div>
+          </div>
+        <div class="hidden-context">
+            <textarea style="opacity: 0;" id="proxy"></textarea>
         </div>
         <script src="vexel.js"></script>
     </body>

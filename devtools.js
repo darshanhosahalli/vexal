@@ -1,3 +1,3 @@
-chrome.devtools.panels.create('Vexel', 'icon.png', '/vexel/vexel.html', () => {
+chrome.devtools.panels.create('Vexal', 'icon.png', '/vexel/vexel.html', () => {
 
 });
