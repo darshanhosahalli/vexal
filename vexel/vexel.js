@@ -138,7 +138,9 @@ chrome.webRequest.onBeforeRequest.addListener(
                     if(networkLog.length == 1) {
                         hideEmptyState();
                     }
-                    networkMap[details.method] = {};
+                    if(!networkMap[details.method]) {
+                        networkMap[details.method] = {};
+                    }
                     networkMap[details.method][details.url] = details.requestId;
                     networkLogObjectMap[details.requestId] = { slNumber: networkLog.length, method: details.method, url: details.url, type: details.type };
                     networkLogObjectMap[details.requestId]['row'] = addNewNetworkLog(networkLogObjectMap[details.requestId]);
@@ -464,7 +466,7 @@ function appendNetworkDetails(networkLog) {
         }
 
         if(networkLog["response_body"]) {
-            appendResponse(networkLog["response_body"], networkLog["url"]);
+            appendResponse(networkLog["response_body"], networkLog["url"], networkLog["method"]);
         }
     } catch(error) {
         console.log('error occurred in appendNetworkDetails:- ', error);
@@ -560,7 +562,7 @@ try {
 }
 
 // append response
-function appendResponse(payload, url) {
+function appendResponse(payload, url, method) {
     while (responseDetailsTab && responseDetailsTab.firstChild) {
         responseDetailsTab.removeChild(responseDetailsTab.firstChild);
     }
@@ -584,7 +586,7 @@ function appendResponse(payload, url) {
 
     button.appendChild(icon);
     button.appendChild(text);
-    button.addEventListener("click", (event) => mockResponse(response, url));
+    button.addEventListener("click", (event) => mockResponse(response, method, url));
 
     mockButtonDiv.appendChild(button);
     responseDetailsTab.appendChild(mockButtonDiv);
@@ -592,13 +594,13 @@ function appendResponse(payload, url) {
 }
 
 // mock response
-function mockResponse(textarea, url) {
-    /*const mock = {
+function mockResponse(textarea, method, url) {
+    const mock = {
         url,
+        method,
         response: textarea.value
     }
-    chrome.runtime.sendMessage({ action: "message-to-inject", data: mock });*/
-    console.log('mock Response called');
+    chrome.runtime.sendMessage({ action: "message-to-inject", data: mock });
 }
 
 // mock svg

@@ -23,4 +23,19 @@
     } catch(error) {
         console.log('error occurred while adding event listener:- ', error);
     }
+
+    try {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === "message-to-inject") {
+                try {
+                    // Send the message to inject.js using window.postMessage
+                    window.postMessage({ source: "content-script", data: message.data }, "*");
+                } catch(error) {
+                    console.log('error occurred while posting message to injected script:- ', error);
+                }
+            }
+        });
+    } catch(error) {
+        console.log('error occurred while adding event listener and posting message:- ', error);
+    }
 })();
