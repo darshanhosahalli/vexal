@@ -82,6 +82,11 @@
                                 value: responsesToMock[this._method][this._url],
                                 configurable: true
                             });
+
+                            Object.defineProperty(this, "response", {
+                                value: JSON.parse(this.responseText),
+                                configurable: true
+                            });
             
                             // Trigger the event handler if defined
                             if (typeof this.onreadystatechange === "function") {
