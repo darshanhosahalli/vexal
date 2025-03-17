@@ -34,6 +34,11 @@ let networkLogObjectMap = {};
 let activeType = "";
 let networkMap = {};
 
+networkMapByUrl = {};
+let currentUrl = '';
+
+mockData = {};
+
 // clear network log
 clearNetworkLogs.addEventListener('click', function() {
     clearNetworkTab();
@@ -42,17 +47,74 @@ clearNetworkLogs.addEventListener('click', function() {
 // when chrome tabs gets switched
 chrome.tabs.onActivated.addListener(function(activeInfo) {
     // when ever tab activates clear the network log to make things easier unless preserve log is enabled
-    clearNetworkTab();
+    getCurrentTabUrl().then(url => {
+        handleTabUpdate(url);
+    });
 });
 
 // when chrome tabs gets switched
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     // Check if the URL has changed (often indicates a tab navigation)
     if (changeInfo.status === "complete" && changeInfo.url) { //check for complete to avoid multiple calls.
+        console.log('updated');
       // clear data here
-      clearNetworkTab();
+      getCurrentTabUrl().then(url => {
+        handleTabUpdate(url);
+    });
     }
 });
+
+// handle tab update
+function handleTabUpdate(url) {
+    try {
+        if (url) {
+            currentUrl = url;
+            while (networklogs.firstChild) {
+                networklogs.removeChild(networklogs.firstChild);
+            }
+            if(networkMapByUrl[url]) {
+                console.log('networkMapByUrl[url]:- ', networkMapByUrl);
+                // restore tab details
+                networkLog = networkMapByUrl[url]['networkLog'];
+                networkLogObjectMap = networkMapByUrl[url]['networkLogObjectMap'];
+                mockData = networkMapByUrl[url]['mockData'];
+
+                const classes = emptyState.classList;
+                if(!classes.contains("hide")) {
+                    classes.add("hide")
+                }
+
+                if(networkLog.length === 0) {
+                    if(classes.contains("hide")) {
+                        classes.remove("hide")
+                    }
+                }
+
+                console.log('networkLog', networkLog);
+                console.log('networkLogObjectMap', networkLogObjectMap);
+                for (const item of networkLog) {
+                    addNewNetworkLog(networkLogObjectMap[item]);
+                }
+            } else {
+                networkMapByUrl[url] = {
+                    'networkLog': networkLog,
+                    'networkLogObjectMap': networkLogObjectMap,
+                    'mockData': mockData,
+                    'networkMap': networkMap
+                }
+                const classes = emptyState.classList;
+                if(classes.contains("hide")) {
+                    classes.remove("hide")
+                }
+            }
+            closePayloadAttributes();
+        } else {
+          console.log("Could not get current tab URL.");
+        }
+    } catch(error) {
+        console.log('error in handleTabUpdate:- ', error);
+    }
+}
 
 function clearNetworkTab() {
     try {
@@ -66,6 +128,21 @@ function clearNetworkTab() {
             networklogs.removeChild(networklogs.firstChild);
         }
         closePayloadAttributes();
+        if(!currentUrl) {
+            getCurrentTabUrl().then(url => {
+                if (url) {
+                    if(networkMapByUrl.hasOwnProperty(url)) {
+                        networkMapByUrl[url] = {};
+                    }
+                } else {
+                  console.log("Could not get current tab URL.");
+                }
+            });
+        } else {
+            if(networkMapByUrl.hasOwnProperty(currentUrl)) {
+                networkMapByUrl[currentUrl] = {};
+            }
+        }
     } catch(error) {
         console.log('error occurred in clearNetworkTab:- ', error);
     }
@@ -264,6 +341,10 @@ function addNewNetworkLog(networkLog) {
         let newRow = document.createElement("div");
         newRow.classList.add("table-row");
 
+        if(networkLog['row']) {
+            networkLog['row'] = newRow;
+        }
+
         newRow.addEventListener("click", () => {
             appendNetworkDetails(networkLog);
         });
@@ -293,19 +374,21 @@ function addNewNetworkLog(networkLog) {
         statusCodeCell.textContent = "pending";
         statusCodeCell.classList.add("italic-text", "medium-width", "table-row-cell");
         newRow.appendChild(statusCodeCell);
+
+        if(networkLog['statusCode']) {
+            statusCodeCell.textContent = networkLog['statusCode'];
+        }
+
+        if(networkLog['error']) {
+            statusCodeCell.textContent = networkLog['error'];
+        }
     
         let copyButtonColumn = document.createElement("div");
         copyButtonColumn.classList.add("border", "small-width", "table-row-cell");
         let copyButton = document.createElement("div");
         copyButton.appendChild(getCopySvg());
         copyButton.classList.add("shadow-svg");
-        const payload = {
-            "method": networkLog['method'], 
-            "url": networkLog['url'], 
-            "type": networkLog['type'],
-            "requestHeaders": networkLog['requestHeaders']
-        };
-        const curl =  generateCurlCommand(payload.method, payload.url, '', payload.type, payload.requestHeaders);
+        const curl =  generateCurlCommand(networkLog['method'], networkLog['url'], networkLog["body"]? networkLog["body"] : '', networkLog['type'], networkLog['requestHeaders']);
         copyButton.addEventListener("click", (event) => copyCurl(curl, event));
         copyButtonColumn.appendChild(copyButton);
         newRow.appendChild(copyButtonColumn);
@@ -535,7 +618,6 @@ function appendPayload(payload) {
 try {
     // devtools.js
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        console.log('message:- ', message);
         if (message.action === "fetch-inject") {
             if(message.data) {
                 if(message.data && message.data.type) {
@@ -549,7 +631,6 @@ try {
                         if(networkMap.hasOwnProperty(message.data.method)) {
                             if(networkMap[message.data.method].hasOwnProperty(message.data.url)) {
                                 networkLogObjectMap[networkMap[message.data.method][message.data.url]]["response_body"] = message.data.response;
-                                console.log('networkLogObjectMap:- ', networkLogObjectMap);
                             }
                         }
                     }
@@ -614,4 +695,15 @@ function getMockSvg() {
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgString, 'image/svg+xml');
     return doc.documentElement;
+}
+
+// current tab url
+async function getCurrentTabUrl() {
+    let queryOptions = { active: true, lastFocusedWindow: true };
+    let [tab] = await chrome.tabs.query(queryOptions);
+    if (tab) {
+      return tab.url;
+    } else {
+      return null;
+    }
 }
