@@ -72,7 +72,6 @@
             try {
                 this._payload = body;
                 try {
-                    console.log('responsesToMock present?:- ', responsesToMock);
                     if(responsesToMock[this._method] && responsesToMock[this._method][this._url]) {
                         setTimeout(() => {
                             // Define properties instead of directly assigning values
@@ -175,7 +174,6 @@
                         responsesToMock[event.data.data.method][event.data.data.url] = event.data.data.response;
                     }
                 }
-                console.log('responsesToMock:- ', responsesToMock);
             } catch(error) {
                 console.log('error occurred while registering mock', error);
             }
