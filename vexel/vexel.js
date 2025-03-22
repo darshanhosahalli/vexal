@@ -24,6 +24,9 @@ const headerDetailsTab = document.getElementById('Headers');
 const payloadDetailsTab = document.getElementById('Payload');
 const responseDetailsTab = document.getElementById('Response');
 
+const alertBox = document.getElementById('alert');
+const alertText = document.getElementById('alert-text');
+
 // Add event listeners to each tab
 requestTab.addEventListener('click', () => toggleSelected(requestTab, headerDetailsTab));
 payloadTab.addEventListener('click', () => toggleSelected(payloadTab, payloadDetailsTab));
@@ -73,7 +76,6 @@ function handleTabUpdate(url) {
                 networklogs.removeChild(networklogs.firstChild);
             }
             if(networkMapByUrl[url]) {
-                console.log('networkMapByUrl[url]:- ', networkMapByUrl);
                 // restore tab details
                 networkLog = networkMapByUrl[url]['networkLog'];
                 networkLogObjectMap = networkMapByUrl[url]['networkLogObjectMap'];
@@ -89,13 +91,15 @@ function handleTabUpdate(url) {
                         classes.remove("hide")
                     }
                 }
-
-                console.log('networkLog', networkLog);
-                console.log('networkLogObjectMap', networkLogObjectMap);
                 for (const item of networkLog) {
                     addNewNetworkLog(networkLogObjectMap[item]);
                 }
             } else {
+                networkLog = [];
+                networkLogObjectMap = {};
+                mockData = {};
+                networkMap = {};
+
                 networkMapByUrl[url] = {
                     'networkLog': networkLog,
                     'networkLogObjectMap': networkLogObjectMap,
@@ -124,6 +128,8 @@ function clearNetworkTab() {
         }
         networkLogObjectMap = {};
         networkLog = [];
+        mockData = {};
+        networkMap = {};
         while (networklogs.firstChild) {
             networklogs.removeChild(networklogs.firstChild);
         }
@@ -132,7 +138,12 @@ function clearNetworkTab() {
             getCurrentTabUrl().then(url => {
                 if (url) {
                     if(networkMapByUrl.hasOwnProperty(url)) {
-                        networkMapByUrl[url] = {};
+                        networkMapByUrl[url] = {
+                            'networkLog': networkLog,
+                            'networkLogObjectMap': networkLogObjectMap,
+                            'mockData': mockData,
+                            'networkMap': networkMap
+                        };
                     }
                 } else {
                   console.log("Could not get current tab URL.");
@@ -140,7 +151,12 @@ function clearNetworkTab() {
             });
         } else {
             if(networkMapByUrl.hasOwnProperty(currentUrl)) {
-                networkMapByUrl[currentUrl] = {};
+                networkMapByUrl[currentUrl] = {
+                    'networkLog': networkLog,
+                    'networkLogObjectMap': networkLogObjectMap,
+                    'mockData': mockData,
+                    'networkMap': networkMap
+                };
             }
         }
     } catch(error) {
@@ -388,8 +404,7 @@ function addNewNetworkLog(networkLog) {
         let copyButton = document.createElement("div");
         copyButton.appendChild(getCopySvg());
         copyButton.classList.add("shadow-svg");
-        const curl =  generateCurlCommand(networkLog['method'], networkLog['url'], networkLog["body"]? networkLog["body"] : '', networkLog['type'], networkLog['requestHeaders']);
-        copyButton.addEventListener("click", (event) => copyCurl(curl, event));
+        copyButton.addEventListener("click", (event) => copyCurl(generateCurlCommand(networkLog), event));
         copyButtonColumn.appendChild(copyButton);
         newRow.appendChild(copyButtonColumn);
         networklogs.appendChild(newRow);
@@ -400,29 +415,29 @@ function addNewNetworkLog(networkLog) {
 }
 
 // generate Curl
-function generateCurlCommand(method, url, body = null, bodyType = null, headers = []) {
+function generateCurlCommand(networkLog) {
+    console.log('copy curl command:- ', networkLog["body"]);
     try {
-        let curlCommand = `curl -X ${method.toUpperCase()} "${url}"`;
+        let curlCommand = `curl -X ${networkLog['method'].toUpperCase()} "${networkLog['url']}"`;
 
         // Add headers
-        for (let header of headers) {
+        for (let header of networkLog['requestHeaders']) {
             curlCommand += ` -H "${header.name}: ${header.value}"`;
         }
     
         // Add request body if present
-        if (body) {
-            if (bodyType === "json") {
-                curlCommand += ` -H "Content-Type: application/json" -d '${JSON.stringify(body)}'`;
-            } else if (bodyType === "form") {
-                let formData = Object.entries(body)
+        if (networkLog["body"] ) {
+            if (networkLog['type'] === "json") {
+                curlCommand += ` -H "Content-Type: application/json" -d '${JSON.stringify(networkLog["body"] )}'`;
+            } else if (networkLog['type'] === "form") {
+                let formData = Object.entries(networkLog["body"] )
                     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
                     .join("&");
                 curlCommand += ` -H "Content-Type: application/x-www-form-urlencoded" -d "${formData}"`;
             } else {
-                curlCommand += ` -d '${body}'`; // Raw body
+                curlCommand += ` -d '${JSON.stringify(networkLog["body"])}'`; // Raw body
             }
         }
-    
         return curlCommand;
     } catch(error) {
         console.log('error occurred in generateCurlCommand:- ', error);
@@ -436,8 +451,27 @@ function copyCurl(value, event) {
         proxy.value = value;
         proxy.select();
         document.execCommand('copy'); // required as the clipboard api is not accessible to extensions yet
+        showAlert('Curl Copied');
     } catch(error) {
         console.log('error occurred in copyCurl:- ', error);
+    }
+}
+
+const hideAlert = () => {
+    setTimeout(() => {
+        alertBox.classList.add('hide');
+    }, 3000); // 3 seconds
+}
+
+function showAlert(text) {
+    try {
+        if(alertBox.classList.contains("hide")) {
+            alertBox.classList.remove("hide");
+            alertText.textContent = text;
+            hideAlert();
+        }
+    } catch(error) {
+        console.log('error occurred in showAlert:- ', error);
     }
 }
 

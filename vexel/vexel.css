@@ -260,3 +260,27 @@ svg {
 .mock-div {
     padding: 5px 0px;
 }
+
+.alert-icon {
+    font-size: 24px;
+}
+
+.alert-text {
+    flex: 1;
+}
+
+.alert {
+    background-color: #1C274B;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}

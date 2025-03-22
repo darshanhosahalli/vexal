@@ -5,6 +5,10 @@
         <link rel="stylesheet" href="vexel.css">
     </head>
     <body class="w-full">
+        <div id="alert" class="alert hide">
+            <span class="alert-icon">ℹ️</span>
+            <span id="alert-text" class="alert-text">Curl Copied</span>
+        </div>
         <div class="row">
             <button id="clear" class="button">
                 <div class="icon margin">
@@ -116,7 +120,7 @@
             </div>
           </div>
         <div class="hidden-context">
-            <textarea style="opacity: 0;" id="proxy"></textarea>
+            <textarea style="opacity: 0; width: 10px;" id="proxy"></textarea>
         </div>
         <script src="vexel.js"></script>
     </body>
