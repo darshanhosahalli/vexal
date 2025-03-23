@@ -460,7 +460,7 @@ function copyCurl(value, event) {
 const hideAlert = () => {
     setTimeout(() => {
         alertBox.classList.add('hide');
-    }, 3000); // 3 seconds
+    }, 2000); // 2 seconds
 }
 
 function showAlert(text) {
@@ -643,6 +643,7 @@ function toggleSelected(selectedTab, tabDetails) {
 // appendPayload
 function appendPayload(payload) {
     try {
+        console.log('payload:- ', payload);
         payloadDetailsTab.textContent = JSON.stringify(payload);
     } catch(error) {
         console.log('error occurred while appendPayload:-', error);
@@ -678,6 +679,7 @@ try {
 
 // append response
 function appendResponse(payload, url, method) {
+    console.log('payload in response:- ', payload);
     while (responseDetailsTab && responseDetailsTab.firstChild) {
         responseDetailsTab.removeChild(responseDetailsTab.firstChild);
     }
